@@ -1,75 +1,86 @@
 import React, { useState } from 'react';
+import { Box, Button, Typography, Alert } from '@mui/material';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import Papa from 'papaparse';
-import { getFirestore, doc, updateDoc } from 'firebase/firestore';
-import app from '../lib/firebase';
-import { Box, Button, Typography, Input } from '@mui/material';
 
-const db = getFirestore(app);
+const storage = getStorage();
+const db = getFirestore();
 
 export default function MasterSheetUpload({ dealId }) {
-  const [csvData, setCsvData] = useState([]);
-  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
     if (!file) return;
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async (result) => {
-        const parsed = result.data;
-        setCsvData(parsed);
-        await saveToFirestore(parsed);
-      },
-      error: (err) => {
-        console.error('CSV parsing error:', err.message);
-      }
-    });
-  };
-
-  const saveToFirestore = async (rows) => {
-    setUploading(true);
-
-    const masterSheet = {};
-    rows.forEach(row => {
-      const entity = row.Entity?.trim();
-      const field = row.Field?.trim();
-      const expected = row.ExpectedValue?.trim();
-
-      if (entity && field && expected) {
-        masterSheet[`${entity}:${field}`] = expected;
-      }
-    });
+    setIsUploading(true);
+    setError(null);
 
     try {
-      const dealRef = doc(db, 'deals', dealId);
-      await updateDoc(dealRef, { masterSheet });
-      console.log('Master sheet uploaded successfully!');
-    } catch (err) {
-      console.error('Error saving master sheet:', err);
-    }
+      // Upload file to Firebase Storage
+      const storageRef = ref(storage, `deals/${dealId}/masterSheet/${file.name}`);
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
 
-    setUploading(false);
+      // Parse file content
+      const text = await file.text();
+      let masterSheetData;
+
+      if (file.name.endsWith('.csv')) {
+        const { data } = Papa.parse(text, { header: true });
+        masterSheetData = data.reduce((acc, row) => {
+          const [key, value] = Object.entries(row)[0];
+          acc[key] = value;
+          return acc;
+        }, {});
+      } else if (file.name.endsWith('.json')) {
+        masterSheetData = JSON.parse(text);
+      } else {
+        throw new Error('Unsupported file format. Please upload a CSV or JSON file.');
+      }
+
+      // Store in Firestore
+      await setDoc(doc(db, `deals/${dealId}/masterSheet`, 'data'), {
+        data: masterSheetData,
+        fileName: file.name,
+        fileUrl: downloadURL,
+        uploadedAt: new Date().toISOString()
+      });
+
+      // Clear the file input
+      event.target.value = '';
+    } catch (err) {
+      console.error('Error uploading master sheet:', err);
+      setError(err.message);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
-    <Box sx={{ my: 3 }}>
-      <Typography variant="subtitle1" gutterBottom>
-        Upload Master Sheet (.csv)
-      </Typography>
-
-      <Input 
-        type="file" 
-        accept=".csv" 
-        onChange={handleFileChange} 
-        disabled={uploading}
+    <Box>
+      <input
+        type="file"
+        accept=".csv,.json"
+        onChange={handleFileUpload}
+        style={{ display: 'none' }}
+        id="master-sheet-upload"
       />
-
-      {csvData.length > 0 && (
-        <Typography sx={{ mt: 1 }}>
-          ✅ {csvData.length} records parsed and saved to Firestore.
-        </Typography>
+      <label htmlFor="master-sheet-upload">
+        <Button
+          variant="contained"
+          component="span"
+          disabled={isUploading}
+        >
+          {isUploading ? 'Uploading...' : 'Upload Master Sheet'}
+        </Button>
+      </label>
+      {error && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {error}
+        </Alert>
       )}
     </Box>
   );
