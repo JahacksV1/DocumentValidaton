@@ -1,22 +1,33 @@
-import turso from '../../../lib/turso';
+import { saveMasterSheetToTurso } from '../../../lib/server-db-helpers';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const { dealId, filename, fileType, fileSize, uploadUrl } = req.body;
+
+  if (!dealId || !filename || !uploadUrl) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
   try {
-    const { dealId, filename, fileType, fileSize, uploadUrl } = req.body;
-    const masterSheetId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-
-    await turso.execute(
-      "INSERT INTO master_sheets (id, deal_id, filename, file_type, file_size, upload_url, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [masterSheetId, dealId, filename, fileType, fileSize, uploadUrl, new Date().toISOString()]
-    );
-
-    res.status(200).json({ success: true, masterSheetId });
+    const documentId = await saveMasterSheetToTurso(dealId, {
+      fileName: filename,
+      fileType,
+      fileSize,
+      fileUrl: uploadUrl
+    });
+    
+    return res.status(200).json({ 
+      success: true,
+      documentId 
+    });
   } catch (error) {
     console.error('Error saving master sheet:', error);
-    res.status(500).json({ error: 'Failed to save master sheet' });
+    return res.status(500).json({ 
+      error: 'Failed to save master sheet',
+      details: error.message 
+    });
   }
 } 

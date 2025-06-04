@@ -1,4 +1,4 @@
-import { tursoClient } from '../../../../lib/turso';
+import { getDocumentsForDeal } from '../../../../lib/server-db-helpers';
 
 export default async function handler(req, res) {
   const { dealId } = req.query;
@@ -8,18 +8,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const db = await tursoClient();
-    
     // Fetch master sheet documents for the deal
-    const result = await db.execute({
-      sql: `SELECT * FROM documents 
-            WHERE deal_id = ? AND type = 'masterSheet' 
-            ORDER BY uploaded_at DESC`,
-      args: [dealId]
-    });
+    const documents = await getDocumentsForDeal(dealId, 'masterSheet');
     
     return res.status(200).json({ 
-      documents: result.rows || [] 
+      documents: documents || [] 
     });
   } catch (error) {
     console.error('Error fetching master sheets:', error);

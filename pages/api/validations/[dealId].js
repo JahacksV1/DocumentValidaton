@@ -1,4 +1,4 @@
-import { tursoClient } from '../../../lib/turso';
+import { getDocumentsForDeal } from '../../../lib/server-db-helpers';
 
 export default async function handler(req, res) {
   const { dealId } = req.query;
@@ -8,17 +8,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const db = await tursoClient();
-    
     // Fetch all documents for the deal to show validation status
-    const result = await db.execute({
-      sql: `SELECT * FROM documents 
-            WHERE deal_id = ? 
-            ORDER BY uploaded_at DESC`,
-      args: [dealId]
-    });
-    
-    const documents = result.rows || [];
+    const documents = await getDocumentsForDeal(dealId);
     
     // Create validation summary
     const validatedDocs = documents.filter(doc => doc.validated === true || doc.validated === 1);

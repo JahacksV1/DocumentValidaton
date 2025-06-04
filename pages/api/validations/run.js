@@ -1,4 +1,4 @@
-import { runValidation } from '../../../lib/db-helpers';
+import { runValidation } from '../../../lib/server-db-helpers';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

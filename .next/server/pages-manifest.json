@@ -1,9 +1,1 @@
-{
-  "/_app": "pages/_app.js",
-  "/_error": "pages/_error.js",
-  "/_document": "pages/_document.js",
-  "/deal/[dealId]": "pages/deal/[dealId].js",
-  "/api/deals/[dealId]": "pages/api/deals/[dealId].js",
-  "/api/documents/list/[dealId]": "pages/api/documents/list/[dealId].js",
-  "/api/documents/master-sheets/[dealId]": "pages/api/documents/master-sheets/[dealId].js"
-}
+{}
