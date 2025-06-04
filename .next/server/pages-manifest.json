@@ -2,9 +2,8 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/api/validations/[dealId]": "pages/api/validations/[dealId].js",
-  "/api/documents/master-sheets/[dealId]": "pages/api/documents/master-sheets/[dealId].js",
-  "/api/documents/list/[dealId]": "pages/api/documents/list/[dealId].js",
   "/deal/[dealId]": "pages/deal/[dealId].js",
-  "/api/validations/history/[dealId]": "pages/api/validations/history/[dealId].js"
+  "/api/deals/[dealId]": "pages/api/deals/[dealId].js",
+  "/api/documents/list/[dealId]": "pages/api/documents/list/[dealId].js",
+  "/api/documents/master-sheets/[dealId]": "pages/api/documents/master-sheets/[dealId].js"
 }

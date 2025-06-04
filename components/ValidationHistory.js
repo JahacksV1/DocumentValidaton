@@ -21,14 +21,40 @@ export default function ValidationHistory({ dealId }) {
     
     try {
       setLoading(true);
-      const response = await fetch(`/api/validations/history/${dealId}`);
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch validation history');
+      // For now, fetch all documents and group by validation status
+      const response = await fetch(`/api/documents/list/${dealId}`);
+      const masterResponse = await fetch(`/api/documents/master-sheets/${dealId}`);
+      
+      if (!response.ok || !masterResponse.ok) {
+        throw new Error('Failed to fetch documents');
       }
       
       const data = await response.json();
-      setValidationRuns(data.validationHistory || []);
+      const masterData = await masterResponse.json();
+      
+      const allDocs = [...(data.documents || []), ...(masterData.documents || [])];
+      
+      // Group documents by validation runs (simplified for Phase 3)
+      const validatedDocs = allDocs.filter(doc => doc.validated === true || doc.validated === 1);
+      const failedDocs = allDocs.filter(doc => 
+        doc.validation_log && doc.validation_log.toLowerCase().includes('failed')
+      );
+      
+      // Create a summary for display
+      if (validatedDocs.length > 0 || failedDocs.length > 0) {
+        setValidationRuns([{
+          id: 'current',
+          validation_date: new Date().toISOString(),
+          total_documents: allDocs.length,
+          passed_documents: validatedDocs.length,
+          failed_documents: failedDocs.length,
+          documents: allDocs
+        }]);
+      } else {
+        setValidationRuns([]);
+      }
+      
     } catch (err) {
       console.error('Error fetching validation history:', err);
       setError(err.message);
@@ -84,7 +110,7 @@ export default function ValidationHistory({ dealId }) {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, px: 2, pt: 1 }}>
         <Typography variant="body2" color="textSecondary">
-          {validationRuns.length} validation{validationRuns.length !== 1 ? 's' : ''} run
+          Latest validation results
         </Typography>
         <Tooltip title="Refresh">
           <IconButton onClick={fetchValidationHistory} size="small">
@@ -111,11 +137,17 @@ export default function ValidationHistory({ dealId }) {
                 secondary={
                   <Stack spacing={0.5}>
                     <Typography variant="caption" color="textSecondary">
-                      {formatUploadDate(run.validation_date)}
+                      Last validation: {formatUploadDate(run.validation_date)}
                     </Typography>
                     <Typography variant="caption" color="textSecondary">
                       {run.total_documents} document{run.total_documents !== 1 ? 's' : ''} processed
                     </Typography>
+                    {run.documents && run.documents.length > 0 && (
+                      <Typography variant="caption" color="textSecondary">
+                        Documents: {run.documents.slice(0, 3).map(d => d.name).join(', ')}
+                        {run.documents.length > 3 && ` and ${run.documents.length - 3} more`}
+                      </Typography>
+                    )}
                   </Stack>
                 }
               />

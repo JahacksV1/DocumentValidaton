@@ -72,8 +72,12 @@ export default function DocumentsList({ dealId, documentType = 'all' }) {
   };
 
   const getValidationStatus = (document) => {
-    // TODO: Add real validation status logic
-    // For now, show "Awaiting Validation" for all documents
+    // Check actual validation status from database
+    if (document.validated === true || document.validated === 1) {
+      return 'validated';
+    } else if (document.validation_log && document.validation_log.includes('failed')) {
+      return 'failed';
+    }
     return 'awaiting';
   };
 
@@ -88,7 +92,7 @@ export default function DocumentsList({ dealId, documentType = 'all' }) {
     }
   };
 
-  const getStatusText = (status) => {
+  const getStatusText = (status, document) => {
     switch (status) {
       case 'validated':
         return 'Validated';
@@ -135,7 +139,7 @@ export default function DocumentsList({ dealId, documentType = 'all' }) {
             <React.Fragment key={doc.id}>
               <ListItem>
                 <ListItemIcon>
-                  {(doc.file_type || doc.fileType || '').includes('pdf') ? (
+                  {(doc.file_type || doc.fileType || doc.name || '').includes('pdf') ? (
                     <PictureAsPdfIcon />
                   ) : (
                     <DescriptionIcon />
@@ -152,20 +156,27 @@ export default function DocumentsList({ dealId, documentType = 'all' }) {
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Typography variant="caption" color="textSecondary">
-                          {formatFileSize(doc.file_size || doc.fileSize || 0)}
+                          {formatFileSize(doc.size || doc.file_size || doc.fileSize || 0)}
                         </Typography>
                         <Typography variant="caption" color="textSecondary">
                           •
                         </Typography>
                         <Typography variant="caption" color="textSecondary">
-                          {formatUploadDate(doc.createdAt || doc.created_at)}
+                          {formatUploadDate(doc.uploaded_at || doc.createdAt || doc.created_at)}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         {getStatusIcon(validationStatus)}
                         <Typography variant="caption" color="textSecondary">
-                          {getStatusText(validationStatus)}
+                          {getStatusText(validationStatus, doc)}
                         </Typography>
+                        {doc.validation_log && validationStatus === 'validated' && (
+                          <Tooltip title={doc.validation_log}>
+                            <Typography variant="caption" color="success.main" sx={{ ml: 1 }}>
+                              ✓
+                            </Typography>
+                          </Tooltip>
+                        )}
                       </Box>
                     </Box>
                   }

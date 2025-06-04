@@ -135,7 +135,11 @@ export default function DealPage() {
               <Typography variant="h5" component="h2" gutterBottom>
                 ✅ Current Validation Status
               </Typography>
-              <ValidationResults key={refreshKey} dealId={dealId} />
+              <ValidationResults 
+                key={refreshKey} 
+                dealId={dealId} 
+                onValidationComplete={handleUploadComplete}
+              />
             </Paper>
           </Grid>
 

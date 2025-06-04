@@ -1,21 +1,31 @@
-import turso from '../../../../lib/turso';
+import { tursoClient } from '../../../../lib/turso';
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  const { dealId } = req.query;
+
+  if (!dealId) {
+    return res.status(400).json({ error: 'Deal ID is required' });
   }
 
   try {
-    const { dealId } = req.query;
+    const db = await tursoClient();
     
-    const result = await turso.execute(
-      "SELECT * FROM documents WHERE dealId = ? ORDER BY createdAt DESC",
-      [dealId]
-    );
-
-    res.status(200).json({ documents: result.rows });
+    // Fetch supporting documents for the deal
+    const result = await db.execute({
+      sql: `SELECT * FROM documents 
+            WHERE deal_id = ? AND type = 'supporting' 
+            ORDER BY uploaded_at DESC`,
+      args: [dealId]
+    });
+    
+    return res.status(200).json({ 
+      documents: result.rows || [] 
+    });
   } catch (error) {
     console.error('Error fetching documents:', error);
-    res.status(500).json({ error: 'Failed to fetch documents' });
+    return res.status(500).json({ 
+      error: 'Failed to fetch documents',
+      details: error.message 
+    });
   }
 } 
