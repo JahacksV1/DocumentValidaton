@@ -1,7 +1,15 @@
 import React, { useState } from 'react';
-import { Box, Typography, Alert, CircularProgress } from '@mui/material';
+import { 
+  Box, Typography, Alert, CircularProgress, Button, 
+  List, ListItem, ListItemText, ListItemIcon, IconButton,
+  Chip
+} from '@mui/material';
 import { UploadButton } from "@uploadthing/react";
-import { saveMasterSheetToTurso } from '../lib/db-helpers';
+import { saveMasterSheetToTurso, formatFileSize, formatUploadDate } from '../lib/db-helpers';
+import DescriptionIcon from '@mui/icons-material/Description';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import DownloadIcon from '@mui/icons-material/Download';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 export default function MasterSheetUpload({ dealId, onUploadComplete }) {
   const [error, setError] = useState(null);
@@ -83,10 +91,25 @@ export default function MasterSheetUpload({ dealId, onUploadComplete }) {
           setUploading(false);
           setError(error.message || "Upload failed. Please try again.");
         }}
-      />
+        appearance={{
+          button: {
+            background: "#2563eb",
+            color: "white",
+            padding: "12px 24px",
+            borderRadius: "8px",
+            fontSize: "16px",
+            fontWeight: "500",
+            border: "none",
+            cursor: "pointer",
+            width: "100%"
+          }
+        }}
+      >
+        Upload Master Sheet
+      </UploadButton>
       
-      <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
-        Accepts PDF and DOCX files up to 4MB
+      <Typography variant="caption" sx={{ mt: 1, display: 'block', color: 'text.secondary' }}>
+        Accepts .pdf and .docx files up to 4MB
       </Typography>
     </Box>
   );

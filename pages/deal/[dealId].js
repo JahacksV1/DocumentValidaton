@@ -74,65 +74,75 @@ export default function DealPage() {
           {deal.name || 'Untitled Deal'}
         </Typography>
 
-        <Grid container spacing={3}>
-          {/* Master Sheet Upload Section */}
+        {/* Upload Sections - Top Row */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          {/* Master Sheet Upload - Top Left */}
           <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                📊 Master Sheet Upload
+            <Paper sx={{ p: 3, border: '1px solid #e0e0e0', borderRadius: 2 }}>
+              <Typography variant="h5" component="h2" gutterBottom>
+                Master Sheet Upload
               </Typography>
               <MasterSheetUpload 
                 dealId={dealId} 
                 onUploadComplete={handleUploadComplete}
               />
+              
+              {/* Master Sheets List */}
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="h6" component="h3" gutterBottom>
+                  Master Sheets
+                </Typography>
+                <DocumentsList 
+                  key={`master-${refreshKey}`} 
+                  dealId={dealId} 
+                  documentType="master" 
+                />
+              </Box>
             </Paper>
           </Grid>
 
-          {/* Documents Upload Section */}
+          {/* Documents Upload - Top Right */}
           <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                📁 Documents Upload
+            <Paper sx={{ p: 3, border: '1px solid #e0e0e0', borderRadius: 2 }}>
+              <Typography variant="h5" component="h2" gutterBottom>
+                Upload Documents
               </Typography>
               <DocumentsUpload 
                 dealId={dealId}
                 onUploadComplete={handleUploadComplete}
               />
+              
+              {/* Documents List */}
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="h6" component="h3" gutterBottom>
+                  Documents
+                </Typography>
+                <DocumentsList 
+                  key={`docs-${refreshKey}`} 
+                  dealId={dealId} 
+                  documentType="all" 
+                />
+              </Box>
             </Paper>
           </Grid>
+        </Grid>
 
-          {/* Master Sheets List */}
+        {/* Validation Sections - Bottom Row */}
+        <Grid container spacing={3}>
+          {/* Current Validation Status */}
           <Grid item xs={12} md={6}>
-            <DocumentsList 
-              key={`master-${refreshKey}`} 
-              dealId={dealId} 
-              documentType="master" 
-            />
-          </Grid>
-
-          {/* Documents List */}
-          <Grid item xs={12} md={6}>
-            <DocumentsList 
-              key={`docs-${refreshKey}`} 
-              dealId={dealId} 
-              documentType="all" 
-            />
-          </Grid>
-
-          {/* Validation Results Section */}
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
+            <Paper sx={{ p: 3, border: '1px solid #e0e0e0', borderRadius: 2 }}>
+              <Typography variant="h5" component="h2" gutterBottom>
                 ✅ Current Validation Status
               </Typography>
               <ValidationResults key={refreshKey} dealId={dealId} />
             </Paper>
           </Grid>
 
-          {/* Validation History Section */}
+          {/* Validation History */}
           <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
+            <Paper sx={{ p: 3, border: '1px solid #e0e0e0', borderRadius: 2 }}>
+              <Typography variant="h5" component="h2" gutterBottom>
                 📜 Validation History
               </Typography>
               <ValidationHistory key={refreshKey} dealId={dealId} />
