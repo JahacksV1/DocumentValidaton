@@ -1,87 +1,56 @@
 import React, { useState } from 'react';
-import { Box, Button, Typography, Alert } from '@mui/material';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
-import Papa from 'papaparse';
+import { Box, Typography, Alert } from '@mui/material';
+import { UploadButton } from "@uploadthing/react";
 
-const storage = getStorage();
-const db = getFirestore();
-
-export default function MasterSheetUpload({ dealId }) {
+export default function MasterSheetUpload({ dealId, onUploadComplete }) {
   const [error, setError] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
 
-  const handleFileUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    setError(null);
-
+  const handleUploadComplete = async (res) => {
     try {
-      // Upload file to Firebase Storage
-      const storageRef = ref(storage, `deals/${dealId}/masterSheet/${file.name}`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-
-      // Parse file content
-      const text = await file.text();
-      let masterSheetData;
-
-      if (file.name.endsWith('.csv')) {
-        const { data } = Papa.parse(text, { header: true });
-        masterSheetData = data.reduce((acc, row) => {
-          const [key, value] = Object.entries(row)[0];
-          acc[key] = value;
-          return acc;
-        }, {});
-      } else if (file.name.endsWith('.json')) {
-        masterSheetData = JSON.parse(text);
-      } else {
-        throw new Error('Unsupported file format. Please upload a CSV or JSON file.');
-      }
-
-      // Store in Firestore
-      await setDoc(doc(db, `deals/${dealId}/masterSheet`, 'data'), {
-        data: masterSheetData,
-        fileName: file.name,
-        fileUrl: downloadURL,
-        uploadedAt: new Date().toISOString()
+      const file = res[0]; // Master sheet is a single file
+      
+      // Save document metadata using API
+      const response = await fetch('/api/documents/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          dealId,
+          name: file.name,
+          url: file.url,
+          type: 'master'
+        }),
       });
 
-      // Clear the file input
-      event.target.value = '';
-    } catch (err) {
-      console.error('Error uploading master sheet:', err);
-      setError(err.message);
-    } finally {
-      setIsUploading(false);
+      if (!response.ok) {
+        throw new Error('Failed to save master sheet');
+      }
+      
+      console.log("Master sheet uploaded and metadata saved:", file);
+      if (onUploadComplete) onUploadComplete();
+    } catch (error) {
+      console.error("Error saving master sheet metadata:", error);
+      setError("Error saving master sheet metadata. Please try again.");
     }
   };
 
   return (
-    <Box>
-      <input
-        type="file"
-        accept=".csv,.json"
-        onChange={handleFileUpload}
-        style={{ display: 'none' }}
-        id="master-sheet-upload"
-      />
-      <label htmlFor="master-sheet-upload">
-        <Button
-          variant="contained"
-          component="span"
-          disabled={isUploading}
-        >
-          {isUploading ? 'Uploading...' : 'Upload Master Sheet'}
-        </Button>
-      </label>
+    <Box sx={{ width: '100%' }}>
       {error && (
-        <Alert severity="error" sx={{ mt: 2 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
+      
+      <UploadButton
+        endpoint="documentUploader"
+        onClientUploadComplete={handleUploadComplete}
+        onUploadError={(error) => {
+          console.error("Upload error:", error);
+          setError(error.message);
+        }}
+      />
     </Box>
   );
-}
+} 

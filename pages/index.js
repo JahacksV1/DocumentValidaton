@@ -1,70 +1,65 @@
 // Home Page Layout for Document Validation Tool
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
-import app from '../lib/firebase';
-import { Box, Button, Typography, Grid, Paper } from '@mui/material';
+import React from 'react';
+import { Box, Typography, Container, Paper, Button } from '@mui/material';
+import Link from 'next/link';
+import turso from '../lib/turso';
+import DealForm from '../components/DealForm';
 
-const db = getFirestore(app);
-
-export default function Home() {
-  const router = useRouter();
-  const [deals, setDeals] = useState([]);
-
-  useEffect(() => {
-    async function fetchDeals() {
-      const querySnapshot = await getDocs(collection(db, 'deals'));
-      const docs = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setDeals(docs);
-    }
-    fetchDeals();
-  }, []);
-
-  const handleNewProject = () => {
-    const newDealId = Date.now().toString(); // temp ID until Firestore write
-    router.push(`/deal/${newDealId}`);
-  };
-
+export default function Home({ deals }) {
   return (
-    <Box sx={{ padding: '2rem' }}>
-      <Typography variant="h3" align="center" gutterBottom>
-        📄 Document Validation Tool
-      </Typography>
+    <Container maxWidth="lg">
+      <Box sx={{ my: 4 }}>
+        <Typography variant="h3" component="h1" gutterBottom align="center">
+          📄 Document Validation Tool
+        </Typography>
+        
+        <Box sx={{ mb: 4 }}>
+          <DealForm />
+        </Box>
 
-      <Box display="flex" justifyContent="center" mb={4}>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          onClick={handleNewProject}
-        >
-          Start New Project
-        </Button>
+        <Typography variant="h5" gutterBottom>
+          Previous Projects
+        </Typography>
+
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 2 }}>
+          {deals.map(deal => (
+            <Link key={deal.id} href={`/deal/${deal.id}`} passHref style={{ textDecoration: 'none' }}>
+              <Paper 
+                sx={{ 
+                  padding: '1rem', 
+                  cursor: 'pointer',
+                  '&:hover': { elevation: 6 }
+                }} 
+                elevation={3}
+              >
+                <Typography variant="h6">{deal.name || 'Untitled Deal'}</Typography>
+                <Typography variant="body2" color="textSecondary">
+                  Created: {new Date(deal.createdAt).toLocaleDateString()}
+                </Typography>
+              </Paper>
+            </Link>
+          ))}
+        </Box>
       </Box>
-
-      <Typography variant="h5" gutterBottom>
-        Previous Projects
-      </Typography>
-
-      <Grid container spacing={2}>
-        {deals.map(deal => (
-          <Grid item xs={12} sm={6} md={4} key={deal.id}>
-            <Paper 
-              sx={{ padding: '1rem', cursor: 'pointer' }} 
-              onClick={() => router.push(`/deal/${deal.id}`)}
-              elevation={3}
-            >
-              <Typography variant="h6">{deal.title || 'Untitled Deal'}</Typography>
-              <Typography variant="body2" color="textSecondary">
-                Created: {deal.createdAt || 'Unknown'}
-              </Typography>
-            </Paper>
-          </Grid>
-        ))}
-      </Grid>
-    </Box>
+    </Container>
   );
+}
+
+export async function getServerSideProps() {
+  try {
+    const result = await turso.execute("SELECT * FROM deals ORDER BY createdAt DESC");
+    return {
+      props: {
+        deals: result.rows
+      }
+    };
+  } catch (error) {
+    console.error('Error fetching deals:', error);
+    return {
+      props: {
+        deals: []
+      }
+    };
+  }
 }

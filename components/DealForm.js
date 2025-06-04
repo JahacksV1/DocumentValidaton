@@ -1,51 +1,71 @@
 import React, { useState } from 'react';
-import { getFirestore, doc, updateDoc } from 'firebase/firestore';
-import app from '../lib/firebase';
 import { Box, TextField, Button, Typography } from '@mui/material';
+import { useRouter } from 'next/router';
 
-const db = getFirestore(app);
+export default function DealForm() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-export default function DealForm({ dealId, onNext }) {
-  const [title, setTitle] = useState('');
-  const [saving, setSaving] = useState(false);
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setError(null);
 
-  const handleSave = async () => {
-    if (!title.trim()) return;
+    const formData = new FormData(event.target);
+    const name = formData.get('name');
 
-    setSaving(true);
     try {
-      await updateDoc(doc(db, 'deals', dealId), {
-        title,
-        updatedAt: new Date().toISOString()
+      const response = await fetch('/api/deals/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name }),
       });
-      onNext(); // Move to next step
+
+      if (!response.ok) {
+        throw new Error('Failed to create deal');
+      }
+
+      const { dealId } = await response.json();
+      router.push(`/deal/${dealId}`);
     } catch (error) {
-      console.error('Error saving deal title:', error);
+      console.error('Error creating deal:', error);
+      setError('Failed to create deal. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    setSaving(false);
   };
 
   return (
-    <Box>
-      <Typography variant="body1" gutterBottom>
-        Give your project a name:
+    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+      <Typography variant="h6" gutterBottom>
+        Start New Project
       </Typography>
 
-      <TextField 
-        label="Deal Name" 
-        value={title} 
-        onChange={(e) => setTitle(e.target.value)} 
-        fullWidth 
-        sx={{ mb: 2 }}
-      />
+      {error && (
+        <Typography color="error" sx={{ mb: 2 }}>
+          {error}
+        </Typography>
+      )}
 
-      <Button 
-        variant="contained" 
-        color="primary" 
-        onClick={handleSave}
-        disabled={saving}
+      <TextField
+        fullWidth
+        name="name"
+        label="Deal Name"
+        required
+        margin="normal"
+      />
+      
+      <Button
+        type="submit"
+        variant="contained"
+        color="primary"
+        disabled={loading}
+        sx={{ mt: 2 }}
       >
-        {saving ? 'Saving...' : 'Save & Continue'}
+        {loading ? 'Creating...' : 'Create Deal'}
       </Button>
     </Box>
   );
