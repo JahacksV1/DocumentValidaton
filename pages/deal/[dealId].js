@@ -4,12 +4,15 @@ import { Box, Typography, Container, Paper, Grid } from '@mui/material';
 import DocumentsUpload from '../../components/DocumentsUpload';
 import MasterSheetUpload from '../../components/MasterSheetUpload';
 import ValidationResults from '../../components/ValidationResults';
+import ValidationHistory from '../../components/ValidationHistory';
+import DocumentsList from '../../components/DocumentsList';
 
 export default function DealPage() {
   const router = useRouter();
   const { dealId } = router.query;
   const [deal, setDeal] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     async function fetchDeal() {
@@ -39,8 +42,9 @@ export default function DealPage() {
   }, [dealId]);
 
   const handleUploadComplete = () => {
-    // Refresh the page or update state as needed
-    console.log('Upload completed');
+    // Refresh all components
+    setRefreshKey(prev => prev + 1);
+    console.log('Upload completed, refreshing components');
   };
 
   if (loading) {
@@ -97,13 +101,41 @@ export default function DealPage() {
             </Paper>
           </Grid>
 
+          {/* Master Sheets List */}
+          <Grid item xs={12} md={6}>
+            <DocumentsList 
+              key={`master-${refreshKey}`} 
+              dealId={dealId} 
+              documentType="master" 
+            />
+          </Grid>
+
+          {/* Documents List */}
+          <Grid item xs={12} md={6}>
+            <DocumentsList 
+              key={`docs-${refreshKey}`} 
+              dealId={dealId} 
+              documentType="all" 
+            />
+          </Grid>
+
           {/* Validation Results Section */}
-          <Grid item xs={12}>
+          <Grid item xs={12} md={6}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>
-                ✅ Validation Results
+                ✅ Current Validation Status
               </Typography>
-              <ValidationResults dealId={dealId} />
+              <ValidationResults key={refreshKey} dealId={dealId} />
+            </Paper>
+          </Grid>
+
+          {/* Validation History Section */}
+          <Grid item xs={12} md={6}>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                📜 Validation History
+              </Typography>
+              <ValidationHistory key={refreshKey} dealId={dealId} />
             </Paper>
           </Grid>
         </Grid>
